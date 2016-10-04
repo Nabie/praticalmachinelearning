@@ -1,12 +1,13 @@
 ---
 title: "Prediction of manner in which personnal activity is done very well"
 author: "Nabié Binouni"
-date: "28 septembre 2016"
 output: html_document
 ---
 
 # Abstract
 
+The aim of this analysis is to predict personnal activity well done using machine learning. The variable of interest is **classe**. The random forest algorithm is used to train the model and missclassify one sample on the validation dataset. I've predicted 20 sample for sumitting in Coursera.
+  
 # Analysis
 
 The dataset used for this analysis is from <http://groupware.les.inf.puc-rio.br/har>.
@@ -15,7 +16,7 @@ repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: e
 
 ### Dataset loading
 Two datasets are used for this analysis: **pml_train** for performing the model 
-and **pml_test** for predicting.The variable of interest is **classe** which is factor variable. So it is a classification issue. As it has five levels, we can't use logistic regression. The first model that comes in mind is linear discriminant analysis. But I'm going to use a stacking model because of accuracy 
+and **pml_test** for prediction.The variable of interest is **classe** which is factor variable. So it is a classification issue. As it has five levels, we can't use logistic regression. The first model that comes in mind is linear discriminant analysis. But I'm going to use a stacking model because of accuracy. 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, comment = "")
 ```
@@ -80,13 +81,18 @@ rf <- train(classe ~., data = train, method = "rf",
 ```
 
 ### Accuracy
+Here we determine the accuracy of the model, then the out error rate.
 
 ```{r Accuracy}
 rf_predict <- predict(rf, validation)
-confusionMatrix(rf_predict, validation$classe)
+rf_accuracy <- confusionMatrix(rf_predict, validation$classe)
+print(rf_accuracy)
 ```
+The model accuracy is **`r rf_accuracy$overall[1]`**. So out error rate is **`r format(1-rf_accuracy$overall[1])`**.
+It misclassified one sample. We can claim that the random forest algorithm is the best one for this issue.  
 
 ### prediction on testing dataset
+Here are the results of prediction for 20 samples, to submit.
 ```{r prediction}
 classe <- predict(rf, testing)
 write.csv(as.data.frame(classe), file = "Prediction.csv", row.names = FALSE)

@@ -117,20 +117,20 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore">Prediction of manner in which personnal activity is done very well</h1>
 <h4 class="author"><em>Nabié Binouni</em></h4>
-<h4 class="date"><em>28 septembre 2016</em></h4>
 
 </div>
 
 
 <div id="abstract" class="section level1">
 <h1>Abstract</h1>
+<p>The aim of this analysis is to predict personnal activity well done using machine learning. The variable of interest is <strong>classe</strong>. The random forest algorithm is used to train the model and missclassify one sample on the validation dataset. I’ve predicted 20 sample for sumitting in Coursera.</p>
 </div>
 <div id="analysis" class="section level1">
 <h1>Analysis</h1>
 <p>The dataset used for this analysis is from <a href="http://groupware.les.inf.puc-rio.br/har" class="uri">http://groupware.les.inf.puc-rio.br/har</a>. It’s about: Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).</p>
 <div id="dataset-loading" class="section level3">
 <h3>Dataset loading</h3>
-<p>Two datasets are used for this analysis: <strong>pml_train</strong> for performing the model and <strong>pml_test</strong> for predicting.The variable of interest is <strong>classe</strong> which is factor variable. So it is a classification issue. As it has five levels, we can’t use logistic regression. The first model that comes in mind is linear discriminant analysis. But I’m going to use a stacking model because of accuracy</p>
+<p>Two datasets are used for this analysis: <strong>pml_train</strong> for performing the model and <strong>pml_test</strong> for prediction.The variable of interest is <strong>classe</strong> which is factor variable. So it is a classification issue. As it has five levels, we can’t use logistic regression. The first model that comes in mind is linear discriminant analysis. But I’m going to use a stacking model because of accuracy.</p>
 <pre class="r"><code>library(caret)
 
 library(randomForest) # rf
@@ -189,8 +189,10 @@ rf &lt;- train(classe ~., data = train, method = &quot;rf&quot;,
 </div>
 <div id="accuracy" class="section level3">
 <h3>Accuracy</h3>
+<p>Here we determine the accuracy of the model, then the out error rate.</p>
 <pre class="r"><code>rf_predict &lt;- predict(rf, validation)
-confusionMatrix(rf_predict, validation$classe)</code></pre>
+rf_accuracy &lt;- confusionMatrix(rf_predict, validation$classe)
+print(rf_accuracy)</code></pre>
 <pre><code>Confusion Matrix and Statistics
 
           Reference
@@ -222,9 +224,11 @@ Prevalence             0.2845   0.1935   0.1743   0.1638   0.1839
 Detection Rate         0.2845   0.1934   0.1743   0.1638   0.1839
 Detection Prevalence   0.2846   0.1934   0.1743   0.1638   0.1839
 Balanced Accuracy      0.9999   0.9996   1.0000   1.0000   1.0000</code></pre>
+<p>The model accuracy is <strong>0.9998301</strong>. So out error rate is <strong>0.0001699235</strong>. It misclassified one sample. We can claim that the random forest algorithm is the best one for this issue.</p>
 </div>
 <div id="prediction-on-testing-dataset" class="section level3">
 <h3>prediction on testing dataset</h3>
+<p>Here are the results of prediction for 20 samples, to submit.</p>
 <pre class="r"><code>classe &lt;- predict(rf, testing)
 write.csv(as.data.frame(classe), file = &quot;Prediction.csv&quot;, row.names = FALSE)</code></pre>
 </div>
