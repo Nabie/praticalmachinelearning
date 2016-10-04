@@ -1,0 +1,94 @@
+---
+title: "Prediction of manner in which personnal activity is done very well"
+author: "Nabié Binouni"
+date: "28 septembre 2016"
+output: html_document
+---
+
+# Abstract
+
+# Analysis
+
+The dataset used for this analysis is from <http://groupware.les.inf.puc-rio.br/har>.
+It's about: Six young health participants were asked to perform one set of 10 
+repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).
+
+### Dataset loading
+Two datasets are used for this analysis: **pml_train** for performing the model 
+and **pml_test** for predicting.The variable of interest is **classe** which is factor variable. So it is a classification issue. As it has five levels, we can't use logistic regression. The first model that comes in mind is linear discriminant analysis. But I'm going to use a stacking model because of accuracy 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = "")
+```
+```{r load, message=FALSE}
+library(caret)
+
+library(randomForest) # rf
+
+train_url = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+test_url = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+if(!file.exists("pml-training.csv")){ 
+    download.file(train_url, destfile = "pml-training.csv")
+    }
+
+if(!file.exists("pml-testing.csv")){ 
+    download.file(test_url, destfile = "pml-testing.csv")
+}
+
+pml_train <- read.csv("pml-training.csv", na.strings = c("", "NA"))
+pml_test <-  read.csv("pml-testing.csv", na.strings = c("", "NA"))
+
+cbind(freq = table(pml_train$classe), percentage = round( prop.table(table(pml_train$classe))*100, digits = 2))
+
+```
+### Dataset cleaning
+
+The variable with a lot of missing values are going to be removed.
+There are 100.
+```{r clean}
+#SumNA <- function(x) sum(is.na(x))
+dim(pml_train[sapply(pml_train, function(x) sum(is.na(x)) == 19216)])
+training <- pml_train[sapply(pml_train, function(x) sum(is.na(x)) != 19216)]
+testing <- pml_test[sapply(pml_test, function(x) sum(is.na(x)) != 19216)]
+
+```
+
+### Trainind and validation datasets
+
+For the training purpose, the dataset is splitted into **train** 70% and **validation** datasets. This last one will allow to detemine the model accuracy.
+```{r Split}
+set.seed(245)
+inTrain <-  createDataPartition(training$classe, p = .7, list = FALSE)
+train <-  training[inTrain, ]
+validation <-  training[-inTrain, ]
+
+```
+
+### Model
+I've tried some algorithm not shown here such as lda, svm, knn and cart. The accuracy of stacking this models is less than the rf one's. So the random forest algorithm is used to train the model becaus of it's accuracy. But this algorithm is known for it's overfitting.To avoid this, k-fold cross-validation is used.
+```{r Model, cache = TRUE}
+
+seed <- 1235
+traincontrol <-  trainControl(method = "cv", number = 10)
+
+# rf
+set.seed(seed)
+rf <- train(classe ~., data = train, method = "rf",
+           trControl = traincontrol, metric = "Accuracy")
+
+#print(rf)
+```
+
+### Accuracy
+
+```{r Accuracy}
+rf_predict <- predict(rf, validation)
+confusionMatrix(rf_predict, validation$classe)
+```
+
+### prediction on testing dataset
+```{r prediction}
+classe <- predict(rf, testing)
+write.csv(as.data.frame(classe), file = "Prediction.csv", row.names = FALSE)
+```
+
