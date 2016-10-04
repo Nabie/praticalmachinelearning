@@ -123,7 +123,7 @@ $(document).ready(function () {
 
 <div id="abstract" class="section level1">
 <h1>Abstract</h1>
-<p>The aim of this analysis is to predict personnal activity well done using machine learning. The variable of interest is <strong>classe</strong>. The random forest algorithm is used to train the model and missclassify one sample on the validation dataset. I’ve predicted 20 sample for sumitting in Coursera.</p>
+<p>The aim of this analysis is to predict personnal activity well done using machine learning. The variable of interest is <strong>classe</strong>. The training dataset is splitted into train and validation dataset. The random forest algorithm is used to train the model on the thirst dataset with an out of sample error of <strong>0.7%</strong> on the last one. I’ve predicted well 20 sample submitted in Coursera quiz.</p>
 </div>
 <div id="analysis" class="section level1">
 <h1>Analysis</h1>
@@ -159,12 +159,19 @@ E 3607      18.38</code></pre>
 </div>
 <div id="dataset-cleaning" class="section level3">
 <h3>Dataset cleaning</h3>
-<p>The variable with a lot of missing values are going to be removed. There are 100.</p>
+<p>The variable with a lot of missing values are going to be removed. There are 100. For the model training the first 7 variables are not going to be taken account such as user_name, new_window, num_windows ect. The reason is I think they don’t explain the variable of interest.</p>
 <pre class="r"><code>#SumNA &lt;- function(x) sum(is.na(x))
 dim(pml_train[sapply(pml_train, function(x) sum(is.na(x)) == 19216)])</code></pre>
 <pre><code>[1] 19622   100</code></pre>
 <pre class="r"><code>training &lt;- pml_train[sapply(pml_train, function(x) sum(is.na(x)) != 19216)]
-testing &lt;- pml_test[sapply(pml_test, function(x) sum(is.na(x)) != 19216)]</code></pre>
+testing &lt;- pml_test[sapply(pml_test, function(x) sum(is.na(x)) != 20)]
+
+training &lt;- training[-c(1:7)] 
+testing &lt;- testing[-c(1:7)]
+names(pml_train)[1:7] # names of variable not include in the model</code></pre>
+<pre><code>[1] &quot;X&quot;                    &quot;user_name&quot;            &quot;raw_timestamp_part_1&quot;
+[4] &quot;raw_timestamp_part_2&quot; &quot;cvtd_timestamp&quot;       &quot;new_window&quot;          
+[7] &quot;num_window&quot;          </code></pre>
 </div>
 <div id="trainind-and-validation-datasets" class="section level3">
 <h3>Trainind and validation datasets</h3>
@@ -176,20 +183,18 @@ validation &lt;-  training[-inTrain, ]</code></pre>
 </div>
 <div id="model" class="section level3">
 <h3>Model</h3>
-<p>I’ve tried some algorithm not shown here such as lda, svm, knn and cart. The accuracy of stacking this models is less than the rf one’s. So the random forest algorithm is used to train the model becaus of it’s accuracy. But this algorithm is known for it’s overfitting.To avoid this, k-fold cross-validation is used.</p>
+<p>I’ve tried some algorithm not shown here such as lda, svm, knn and cart. The accuracy of stacking these models is less than the rf one’s. So the random forest algorithm is used to train the model because of it’s accuracy. But this algorithm is known for it’s overfitting.To avoid this, k-fold cross-validation is used.</p>
 <pre class="r"><code>seed &lt;- 1235
 traincontrol &lt;-  trainControl(method = &quot;cv&quot;, number = 10)
 
 # rf
 set.seed(seed)
 rf &lt;- train(classe ~., data = train, method = &quot;rf&quot;,
-           trControl = traincontrol, metric = &quot;Accuracy&quot;)
-
-#print(rf)</code></pre>
+           trControl = traincontrol, metric = &quot;Accuracy&quot;)</code></pre>
 </div>
 <div id="accuracy" class="section level3">
 <h3>Accuracy</h3>
-<p>Here we determine the accuracy of the model, then the out error rate.</p>
+<p>Here we determine the accuracy of the model, then the out of sample error.</p>
 <pre class="r"><code>rf_predict &lt;- predict(rf, validation)
 rf_accuracy &lt;- confusionMatrix(rf_predict, validation$classe)
 print(rf_accuracy)</code></pre>
@@ -197,38 +202,38 @@ print(rf_accuracy)</code></pre>
 
           Reference
 Prediction    A    B    C    D    E
-         A 1674    1    0    0    0
-         B    0 1138    0    0    0
-         C    0    0 1026    0    0
-         D    0    0    0  964    0
-         E    0    0    0    0 1082
+         A 1674   16    0    0    0
+         B    0 1120    9    0    0
+         C    0    3 1017    8    0
+         D    0    0    0  956    6
+         E    0    0    0    0 1076
 
 Overall Statistics
-                                     
-               Accuracy : 0.9998     
-                 95% CI : (0.9991, 1)
-    No Information Rate : 0.2845     
-    P-Value [Acc &gt; NIR] : &lt; 2.2e-16  
-                                     
-                  Kappa : 0.9998     
- Mcnemar's Test P-Value : NA         
+                                          
+               Accuracy : 0.9929          
+                 95% CI : (0.9904, 0.9949)
+    No Information Rate : 0.2845          
+    P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+                                          
+                  Kappa : 0.991           
+ Mcnemar's Test P-Value : NA              
 
 Statistics by Class:
 
                      Class: A Class: B Class: C Class: D Class: E
-Sensitivity            1.0000   0.9991   1.0000   1.0000   1.0000
-Specificity            0.9998   1.0000   1.0000   1.0000   1.0000
-Pos Pred Value         0.9994   1.0000   1.0000   1.0000   1.0000
-Neg Pred Value         1.0000   0.9998   1.0000   1.0000   1.0000
+Sensitivity            1.0000   0.9833   0.9912   0.9917   0.9945
+Specificity            0.9962   0.9981   0.9977   0.9988   1.0000
+Pos Pred Value         0.9905   0.9920   0.9893   0.9938   1.0000
+Neg Pred Value         1.0000   0.9960   0.9981   0.9984   0.9988
 Prevalence             0.2845   0.1935   0.1743   0.1638   0.1839
-Detection Rate         0.2845   0.1934   0.1743   0.1638   0.1839
-Detection Prevalence   0.2846   0.1934   0.1743   0.1638   0.1839
-Balanced Accuracy      0.9999   0.9996   1.0000   1.0000   1.0000</code></pre>
-<p>The model accuracy is <strong>0.9998301</strong>. So out error rate is <strong>0.0001699235</strong>. It misclassified one sample. We can claim that the random forest algorithm is the best one for this issue.</p>
+Detection Rate         0.2845   0.1903   0.1728   0.1624   0.1828
+Detection Prevalence   0.2872   0.1918   0.1747   0.1635   0.1828
+Balanced Accuracy      0.9981   0.9907   0.9945   0.9952   0.9972</code></pre>
+<p>The model accuracy is <strong>0.9928632</strong>. So the out of sample error is <strong>0.007136788</strong>. This is acceptable. We can claim that the random forest algorithm is the best one for this issue.</p>
 </div>
 <div id="prediction-on-testing-dataset" class="section level3">
 <h3>prediction on testing dataset</h3>
-<p>Here are the results of prediction for 20 samples, to submit.</p>
+<p>Here are the results of prediction for 20 samples, to submit. I’ve got 100% accuracy.</p>
 <pre class="r"><code>classe &lt;- predict(rf, testing)
 write.csv(as.data.frame(classe), file = &quot;Prediction.csv&quot;, row.names = FALSE)</code></pre>
 </div>

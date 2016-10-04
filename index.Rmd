@@ -6,7 +6,7 @@ output: html_document
 
 # Abstract
 
-The aim of this analysis is to predict personnal activity well done using machine learning. The variable of interest is **classe**. The random forest algorithm is used to train the model and missclassify one sample on the validation dataset. I've predicted 20 sample for sumitting in Coursera.
+The aim of this analysis is to predict personnal activity well done using machine learning. The variable of interest is **classe**. The training dataset is splitted into train and validation dataset. The random forest algorithm is used to train the model on the thirst dataset with an out of sample error of **0.7%** on the last one. I've predicted well 20 sample submitted in Coursera quiz.
   
 # Analysis
 
@@ -45,13 +45,16 @@ cbind(freq = table(pml_train$classe), percentage = round( prop.table(table(pml_t
 ### Dataset cleaning
 
 The variable with a lot of missing values are going to be removed.
-There are 100.
+There are 100. For the model training the first 7 variables are not going to be taken account such as user_name, new_window, num_windows ect. The reason is I think they don't explain the variable of interest.
 ```{r clean}
 #SumNA <- function(x) sum(is.na(x))
 dim(pml_train[sapply(pml_train, function(x) sum(is.na(x)) == 19216)])
 training <- pml_train[sapply(pml_train, function(x) sum(is.na(x)) != 19216)]
-testing <- pml_test[sapply(pml_test, function(x) sum(is.na(x)) != 19216)]
+testing <- pml_test[sapply(pml_test, function(x) sum(is.na(x)) != 20)]
 
+training <- training[-c(1:7)] 
+testing <- testing[-c(1:7)]
+names(pml_train)[1:7] # names of variable not include in the model
 ```
 
 ### Trainind and validation datasets
@@ -66,7 +69,7 @@ validation <-  training[-inTrain, ]
 ```
 
 ### Model
-I've tried some algorithm not shown here such as lda, svm, knn and cart. The accuracy of stacking this models is less than the rf one's. So the random forest algorithm is used to train the model becaus of it's accuracy. But this algorithm is known for it's overfitting.To avoid this, k-fold cross-validation is used.
+I've tried some algorithm not shown here such as lda, svm, knn and cart. The accuracy of stacking these models is less than the rf one's. So the random forest algorithm is used to train the model because of it's accuracy. But this algorithm is known for it's overfitting.To avoid this, k-fold cross-validation is used.
 ```{r Model, cache = TRUE}
 
 seed <- 1235
@@ -77,22 +80,23 @@ set.seed(seed)
 rf <- train(classe ~., data = train, method = "rf",
            trControl = traincontrol, metric = "Accuracy")
 
-#print(rf)
+
 ```
 
 ### Accuracy
-Here we determine the accuracy of the model, then the out error rate.
+Here we determine the accuracy of the model, then the out of sample error. 
 
 ```{r Accuracy}
 rf_predict <- predict(rf, validation)
 rf_accuracy <- confusionMatrix(rf_predict, validation$classe)
 print(rf_accuracy)
 ```
-The model accuracy is **`r rf_accuracy$overall[1]`**. So out error rate is **`r format(1-rf_accuracy$overall[1])`**.
-It misclassified one sample. We can claim that the random forest algorithm is the best one for this issue.  
+The model accuracy is **`r rf_accuracy$overall[1]`**. So the out of sample error  is **`r format(1-rf_accuracy$overall[1])`**.
+This is acceptable. We can claim that the random forest algorithm is the best one for this issue.  
 
 ### prediction on testing dataset
-Here are the results of prediction for 20 samples, to submit.
+
+Here are the results of prediction for 20 samples, to submit. I've got 100% accuracy.
 ```{r prediction}
 classe <- predict(rf, testing)
 write.csv(as.data.frame(classe), file = "Prediction.csv", row.names = FALSE)
